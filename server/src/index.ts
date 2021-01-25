@@ -12,12 +12,20 @@ import redis from 'redis'
 import session from 'express-session'
 import ConnectRedis from 'connect-redis'
 import { MyContext } from './types'
+import cors from 'cors'
 
 const main = async () => {
   const orm = await MikroORM.init(mikroConfig)
   await orm.getMigrator().up()
 
   const app = express()
+
+  app.use(
+    cors({
+      origin: 'http://localhost:3000',
+      credentials: true,
+    })
+  )
 
   // redis middleware must be before apollo, because it will be used inside apollo
   const RedisStore = ConnectRedis(session)
@@ -49,7 +57,10 @@ const main = async () => {
     context: ({ req, res }): MyContext => ({ em: orm.em, req, res }),
   })
 
-  apolloServer.applyMiddleware({ app })
+  apolloServer.applyMiddleware({
+    app,
+    cors: false,
+  })
 
   app.listen(4000, () => {
     console.log('server started on localhost:4000')
