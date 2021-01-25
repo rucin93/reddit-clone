@@ -43,11 +43,14 @@
     "connect-redis": "^5.0.0",
     "express": "^4.17.1",
     "express-session": "^1.17.1",
+    "formik": "^2.2.6",
     "graphql": "^15.4.0",
     "pg": "^8.5.1",
+    "react": "^17.0.1",
     "redis": "^3.0.2",
     "reflect-metadata": "^0.1.13",
-    "type-graphql": "^1.1.1"
+    "type-graphql": "^1.1.1",
+    "urql": "^1.11.6"
   },
   "mikro-orm": {
     "useTsNode": true,
