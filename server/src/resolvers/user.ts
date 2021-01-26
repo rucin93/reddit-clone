@@ -13,6 +13,7 @@ import argon2 from 'argon2'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { COOKIE_NAME } from '../const'
 import { UsernamePasswordInput } from './UsernamePasswordInput'
+import { validateRegister } from '../utils/validateRegister'
 
 @ObjectType()
 class FieldError {
@@ -59,48 +60,9 @@ export class UserResolver {
     @Arg('options') options: UsernamePasswordInput,
     @Ctx() { em, req }: MyContext
   ): Promise<UserResponse> {
-    if (options.username.length < 3) {
-      return {
-        errors: [
-          {
-            field: 'username',
-            message: 'Username must be longer than 2',
-          },
-        ],
-      }
-    }
-
-    if (options.username.length > 250) {
-      return {
-        errors: [
-          {
-            field: 'username',
-            message: 'Username must be shorter than 250',
-          },
-        ],
-      }
-    }
-
-    if (options.password.length < 6) {
-      return {
-        errors: [
-          {
-            field: 'password',
-            message: 'Password must be greater than 5',
-          },
-        ],
-      }
-    }
-
-    if (!options.email.includes('@')) {
-      return {
-        errors: [
-          {
-            field: 'email',
-            message: 'invalid email',
-          },
-        ],
-      }
+    const errors = validateRegister(options)
+    if (errors) {
+      return { errors }
     }
 
     const hash = await argon2.hash(options.password)
@@ -142,11 +104,16 @@ export class UserResolver {
 
   @Mutation(() => UserResponse)
   async login(
-    @Arg('username') username: string,
+    @Arg('usernameOrEmail') usernameOrEmail: string,
     @Arg('password') password: string,
     @Ctx() { em, req }: MyContext
   ): Promise<UserResponse> {
-    const user = await em.findOne(User, { username: username })
+    const user = await em.findOne(
+      User,
+      usernameOrEmail.includes('@')
+        ? { email: usernameOrEmail }
+        : { username: usernameOrEmail }
+    )
     if (!user) {
       return {
         errors: [
