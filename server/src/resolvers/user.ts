@@ -4,7 +4,6 @@ import {
   Resolver,
   Mutation,
   Arg,
-  InputType,
   Field,
   Ctx,
   ObjectType,
@@ -12,14 +11,8 @@ import {
 } from 'type-graphql'
 import argon2 from 'argon2'
 import { EntityManager } from '@mikro-orm/postgresql'
-
-@InputType()
-class UsernamePasswordInput {
-  @Field()
-  username: string
-  @Field()
-  password: string
-}
+import { COOKIE_NAME } from '../const'
+import { UsernamePasswordInput } from './UsernamePasswordInput'
 
 @ObjectType()
 class FieldError {
@@ -54,6 +47,12 @@ export class UserResolver {
     const user = await em.findOne(User, { id: req.session.userId })
     return user
   }
+
+  // @Mutation(() => Boolean)
+  // async forgotPassword(@Arg('email') email: string, @Ctx() { em }: MyContext) {
+  //   // const user = await em.findOne(User, {email})
+  //   return true
+  // }
 
   @Mutation(() => UserResponse)
   async register(
@@ -93,6 +92,17 @@ export class UserResolver {
       }
     }
 
+    if (!options.email.includes('@')) {
+      return {
+        errors: [
+          {
+            field: 'email',
+            message: 'invalid email',
+          },
+        ],
+      }
+    }
+
     const hash = await argon2.hash(options.password)
     let user
     try {
@@ -101,6 +111,7 @@ export class UserResolver {
         .getKnexQuery()
         .insert({
           username: options.username,
+          email: options.email,
           password: hash,
           create_at: new Date(),
           updated_at: new Date(),
@@ -131,10 +142,11 @@ export class UserResolver {
 
   @Mutation(() => UserResponse)
   async login(
-    @Arg('options') options: UsernamePasswordInput,
+    @Arg('username') username: string,
+    @Arg('password') password: string,
     @Ctx() { em, req }: MyContext
   ): Promise<UserResponse> {
-    const user = await em.findOne(User, { username: options.username })
+    const user = await em.findOne(User, { username: username })
     if (!user) {
       return {
         errors: [
@@ -145,7 +157,7 @@ export class UserResolver {
         ],
       }
     }
-    const valid = await argon2.verify(user.password, options.password)
+    const valid = await argon2.verify(user.password, password)
     if (!valid) {
       return {
         errors: [
@@ -163,5 +175,21 @@ export class UserResolver {
     return {
       user,
     }
+  }
+  @Mutation(() => Boolean)
+  logout(@Ctx() { req, res }: MyContext) {
+    return new Promise((resolve) =>
+      req.session.destroy((err) => {
+        if (err) {
+          console.log(err)
+
+          resolve(false)
+          return
+        }
+
+        res.clearCookie(COOKIE_NAME)
+        resolve(true)
+      })
+    )
   }
 }
