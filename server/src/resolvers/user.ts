@@ -11,6 +11,7 @@ import {
   Query,
 } from 'type-graphql'
 import argon2 from 'argon2'
+import { EntityManager } from '@mikro-orm/postgresql'
 
 @InputType()
 class UsernamePasswordInput {
@@ -93,10 +94,19 @@ export class UserResolver {
     }
 
     const hash = await argon2.hash(options.password)
-    const user = em.create(User, { username: options.username, password: hash })
-
+    let user
     try {
-      await em.persistAndFlush(user)
+      const result = await (em as EntityManager)
+        .createQueryBuilder(User)
+        .getKnexQuery()
+        .insert({
+          username: options.username,
+          password: hash,
+          create_at: new Date(),
+          updated_at: new Date(),
+        })
+        .returning('*')
+      user = result[0]
     } catch (err) {
       // duplicate username
       if (err.code === '23505') {
