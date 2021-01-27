@@ -1,7 +1,7 @@
 query Posts {
   posts {
     id
-    createAt
+    createdAt
     updatedAt
     title
   }

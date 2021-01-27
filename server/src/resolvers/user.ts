@@ -10,11 +10,12 @@ import {
 import { MyContext } from '../types'
 import { User } from '../entities/User'
 import argon2 from 'argon2'
-import { COOKIE_NAME, FORGET_PASSWORD_PREFIX } from '../const'
+import { COOKIE_NAME, FORGET_PASSWORD_PREFIX } from '../constants'
 import { UsernamePasswordInput } from './UsernamePasswordInput'
 import { validateRegister } from '../utils/validateRegister'
 import { sendEmail } from '../utils/sendEmail'
 import { v4 } from 'uuid'
+import { getConnection } from 'typeorm'
 
 @ObjectType()
 class FieldError {
@@ -145,11 +146,19 @@ export class UserResolver {
     const hashedPassword = await argon2.hash(options.password)
     let user
     try {
-      user = await User.create({
-        username: options.username,
-        email: options.email,
-        password: hashedPassword,
-      }).save()
+      // User.create({}).save()
+      const result = await getConnection()
+        .createQueryBuilder()
+        .insert()
+        .into(User)
+        .values({
+          username: options.username,
+          email: options.email,
+          password: hashedPassword,
+        })
+        .returning('*')
+        .execute()
+      user = result.raw[0]
     } catch (err) {
       //|| err.detail.includes("already exists")) {
       // duplicate username error
@@ -168,7 +177,7 @@ export class UserResolver {
     // store user id session
     // this will set a cookie on the user
     // keep them logged in
-    req.session.userId = user?.id
+    req.session.userId = user.id
 
     return { user }
   }

@@ -1,5 +1,5 @@
 import 'reflect-metadata'
-import { __prod__, COOKIE_NAME } from './const'
+import { __prod__, COOKIE_NAME } from './constants'
 import express from 'express'
 import { ApolloServer } from 'apollo-server-express'
 import { buildSchema } from 'type-graphql'

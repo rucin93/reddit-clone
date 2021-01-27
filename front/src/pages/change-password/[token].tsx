@@ -5,11 +5,7 @@ import { Formik, Form } from 'formik'
 import { toErrorMap } from '../../utils/toErrorMap'
 import { InputField } from '../../components/InputField'
 import { Box, Button, Link, Flex } from '@chakra-ui/react'
-import {
-  useChangePasswordMutation,
-  MeDocument,
-  MeQuery,
-} from '../../generated/graphql'
+import { useChangePasswordMutation } from '../../generated/graphql'
 import { useRouter } from 'next/router'
 import { withUrqlClient } from 'next-urql'
 import { createUrqlClient } from '../../utils/createUrqlClient'
@@ -74,4 +70,4 @@ const ChangePassword: NextPage = () => {
   )
 }
 
-export default withUrqlClient(createUrqlClient, { ssr: false })(ChangePassword)
+export default withUrqlClient(createUrqlClient)(ChangePassword)
